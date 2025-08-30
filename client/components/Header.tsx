@@ -32,7 +32,7 @@ export default function Header() {
               <div className="relative">
                 <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-300">
                   <img 
-                    src="/bpslogo.svg" 
+                    src="bpslogo.svg" 
                     alt="BPS Logo" 
                     className="w-12 h-12 object-contain"
                   />

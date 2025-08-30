@@ -10,7 +10,7 @@ export interface PDFExportOptions {
 }
 
 export const exportChartToPDF = async (
-  chartElementId: string, 
+  chartElementId: string,
   options: PDFExportOptions = {}
 ): Promise<void> => {
   try {
@@ -28,20 +28,26 @@ export const exportChartToPDF = async (
       throw new Error(`Chart element with ID '${chartElementId}' not found`);
     }
 
+    // Find the canvas element inside the chart
+    const canvasElement = chartElement.querySelector('canvas');
+    if (!canvasElement) {
+      throw new Error(`Canvas element not found inside chart with ID '${chartElementId}'`);
+    }
+
     // Temporarily show the element if it's hidden
     const originalDisplay = chartElement.style.display;
     if (originalDisplay === 'none') {
       chartElement.style.display = 'block';
     }
 
-    // Capture the chart as canvas
-    const canvas = await html2canvas(chartElement, {
+    // Capture the chart canvas
+    const canvas = await html2canvas(canvasElement, {
       scale: quality,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
-      width: chartElement.offsetWidth,
-      height: chartElement.offsetHeight,
+      width: canvasElement.width,
+      height: canvasElement.height,
     });
 
     // Restore original display
@@ -66,7 +72,7 @@ export const exportChartToPDF = async (
 
     // Add image to PDF
     const imgData = canvas.toDataURL('image/png');
-    
+
     if (imgHeight > pdfHeight - (margin * 2)) {
       // If image is too tall, scale it down
       const ratio = (pdfHeight - (margin * 2)) / imgHeight;
@@ -87,7 +93,7 @@ export const exportChartToPDF = async (
 
     // Save the PDF
     pdf.save(filename);
-    
+
     console.log(`✅ Chart exported to PDF: ${filename}`);
   } catch (error) {
     console.error('❌ PDF export failed:', error);
@@ -120,9 +126,16 @@ export const exportMultipleChartsToPDF = async (
     for (let i = 0; i < chartElementIds.length; i++) {
       const chartElementId = chartElementIds[i];
       const chartElement = document.getElementById(chartElementId);
-      
+
       if (!chartElement) {
         console.warn(`⚠️ Chart element with ID '${chartElementId}' not found, skipping...`);
+        continue;
+      }
+
+      // Find the canvas element inside the chart
+      const canvasElement = chartElement.querySelector('canvas');
+      if (!canvasElement) {
+        console.warn(`⚠️ Canvas element not found inside chart with ID '${chartElementId}', skipping...`);
         continue;
       }
 
@@ -137,14 +150,14 @@ export const exportMultipleChartsToPDF = async (
         chartElement.style.display = 'block';
       }
 
-      // Capture the chart
-      const canvas = await html2canvas(chartElement, {
+      // Capture the chart canvas
+      const canvas = await html2canvas(canvasElement, {
         scale: quality,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: chartElement.offsetWidth,
-        height: chartElement.offsetHeight,
+        width: canvasElement.width,
+        height: canvasElement.height,
       });
 
       // Restore original display
@@ -158,7 +171,7 @@ export const exportMultipleChartsToPDF = async (
 
       // Add image to PDF
       const imgData = canvas.toDataURL('image/png');
-      
+
       if (imgHeight > pdfHeight - (margin * 2)) {
         // If image is too tall, scale it down
         const ratio = (pdfHeight - (margin * 2)) / imgHeight;
@@ -180,7 +193,7 @@ export const exportMultipleChartsToPDF = async (
 
     // Save the PDF
     pdf.save(filename);
-    
+
     console.log(`✅ ${chartElementIds.length} charts exported to PDF: ${filename}`);
   } catch (error) {
     console.error('❌ Multi-chart PDF export failed:', error);
@@ -234,12 +247,12 @@ export const exportDashboardToPDF = async (
     // Add image to PDF, splitting across pages if necessary
     while (heightRemaining > 0) {
       const pageHeight = Math.min(heightRemaining, pdfHeight - (margin * 2));
-      
+
       // Create a canvas for this page
       const pageCanvas = document.createElement('canvas');
       pageCanvas.width = canvas.width;
       pageCanvas.height = (canvas.height * pageHeight) / imgHeight;
-      
+
       const ctx = pageCanvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(
@@ -249,16 +262,16 @@ export const exportDashboardToPDF = async (
           0, 0,
           canvas.width, pageCanvas.height
         );
-        
+
         const pageImgData = pageCanvas.toDataURL('image/png');
-        
+
         if (position > 0) {
           pdf.addPage();
         }
-        
+
         pdf.addImage(pageImgData, 'PNG', margin, margin, imgWidth, pageHeight);
       }
-      
+
       heightRemaining -= pageHeight;
       position += pageHeight;
     }
@@ -272,7 +285,7 @@ export const exportDashboardToPDF = async (
     });
 
     pdf.save(filename);
-    
+
     console.log(`✅ Dashboard exported to PDF: ${filename}`);
   } catch (error) {
     console.error('❌ Dashboard PDF export failed:', error);
